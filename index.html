@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Almuerzo QR</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--text:#182230;--muted:#6b7280;--primary:#2563eb;--primary2:#1d4ed8;--green:#16a34a;--red:#dc2626;--orange:#ea580c;--border:#e5e7eb;--shadow:0 8px 30px #18223012}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--text)}
+button,input,select{font:inherit}.app{display:flex;min-height:100vh}.sidebar{width:245px;background:#111827;color:white;padding:22px 15px;position:fixed;inset:0 auto 0 0;z-index:10}.brand{font-size:21px;font-weight:800;padding:8px 12px 24px}.brand span{color:#60a5fa}.nav button{width:100%;border:0;background:transparent;color:#cbd5e1;text-align:left;padding:12px 13px;border-radius:10px;cursor:pointer;margin:3px 0}.nav button:hover,.nav button.active{background:#1f2937;color:white}.main{margin-left:245px;width:calc(100% - 245px);padding:25px;max-width:1500px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px}.top h1{margin:0;font-size:27px}.top small{color:var(--muted)}.mobile-btn{display:none}
+.page{display:none}.page.active{display:block}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.card{background:var(--card);border:1px solid var(--border);border-radius:15px;padding:20px;box-shadow:var(--shadow)}.stat-label{color:var(--muted);font-size:14px}.stat{font-size:30px;font-weight:800;margin-top:7px}.stat.green{color:var(--green)}.stat.red{color:var(--red)}.stat.orange{color:var(--orange)}
+.grid{display:grid;grid-template-columns:1.3fr .7fr;gap:18px;margin-top:18px}.section-title{font-size:18px;font-weight:750;margin:0 0 15px}.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse}.table th,.table td{padding:12px 10px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}.table th{font-size:12px;color:var(--muted);text-transform:uppercase}.badge{padding:5px 9px;border-radius:999px;font-size:12px;font-weight:700;display:inline-block}.ok{background:#dcfce7;color:#166534}.bad{background:#fee2e2;color:#991b1b}.warn{background:#ffedd5;color:#9a3412}.info{background:#dbeafe;color:#1e40af}
+.btn{border:0;border-radius:9px;padding:10px 14px;cursor:pointer;font-weight:650}.primary{background:var(--primary);color:#fff}.primary:hover{background:var(--primary2)}.ghost{background:#eef2f7;color:#334155}.danger{background:#fee2e2;color:#991b1b}.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px}.toolbar input,.toolbar select{padding:10px 12px;border:1px solid var(--border);border-radius:9px;background:white;outline:none}.toolbar input{min-width:240px}
+.qr-layout{display:grid;grid-template-columns:1fr 1fr;gap:18px}.scanner{background:#0b1220;border-radius:14px;min-height:350px;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}.scanner video{width:100%;height:100%;object-fit:cover}.scanner .scanbox{position:absolute;width:210px;height:210px;border:3px solid #60a5fa;border-radius:15px;box-shadow:0 0 0 999px #0006}.result{margin-top:15px;border-radius:12px;padding:17px;border:1px solid var(--border);background:#fff}.result h3{margin:0 0 7px}.student-card{display:flex;gap:18px;align-items:center}.qrbox{width:150px;height:150px;border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;background:white;overflow:hidden}.qrbox img{width:100%;height:100%}
+.profile{display:grid;grid-template-columns:260px 1fr;gap:20px}.profile .qrbox{width:220px;height:220px;margin:auto}.detail p{margin:8px 0;color:var(--muted)}.detail strong{color:var(--text)}
+.modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:50;padding:15px}.modal.show{display:flex}.modal-box{background:#fff;border-radius:16px;padding:22px;max-width:500px;width:100%;max-height:90vh;overflow:auto}.modal-head{display:flex;justify-content:space-between;align-items:center}.modal-head h2{margin:0}.close{border:0;background:#eef2f7;border-radius:50%;width:34px;height:34px;cursor:pointer}.form{display:grid;gap:12px;margin-top:15px}.form label{font-size:13px;font-weight:700}.form input,.form select{padding:11px;border:1px solid var(--border);border-radius:9px}
+.empty{text-align:center;color:var(--muted);padding:25px}.chart{height:240px;display:flex;align-items:end;gap:12px;padding:20px 8px 5px}.bar{flex:1;background:#93c5fd;border-radius:7px 7px 0 0;min-width:25px;position:relative}.bar span{position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:11px}.bar small{position:absolute;bottom:-22px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--muted)}
+.toast{position:fixed;right:20px;bottom:20px;background:#111827;color:#fff;padding:13px 17px;border-radius:10px;box-shadow:var(--shadow);display:none;z-index:100}.toast.show{display:block}
+@media(max-width:900px){.sidebar{transform:translateX(-100%);transition:.2s}.sidebar.open{transform:translateX(0)}.main{margin-left:0;width:100%;padding:18px}.mobile-btn{display:block}.cards{grid-template-columns:repeat(2,1fr)}.grid,.qr-layout,.profile{grid-template-columns:1fr}.top{gap:10px}.top h1{font-size:22px}}
+@media(max-width:520px){.cards{grid-template-columns:1fr}.toolbar input{min-width:100%;width:100%}.student-card{align-items:flex-start;flex-direction:column}}
+
+.auth-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;z-index:200}
+.auth-card{background:#fff;width:min(430px,100%);border:1px solid var(--border);border-radius:18px;padding:28px;box-shadow:var(--shadow)}
+.auth-brand{text-align:center;font-size:28px;font-weight:850;margin-bottom:5px}.auth-brand span{color:var(--primary)}
+.auth-sub{text-align:center;color:var(--muted);margin:0 0 22px;font-size:14px}
+.auth-tabs{display:grid;grid-template-columns:1fr 1fr;background:#eef2f7;border-radius:10px;padding:4px;margin-bottom:18px}
+.auth-tabs button{border:0;background:transparent;padding:10px;border-radius:8px;cursor:pointer;font-weight:700;color:#64748b}
+.auth-tabs button.active{background:#fff;color:var(--text);box-shadow:0 1px 5px #0001}
+.auth-form{display:grid;gap:12px}.auth-form label{font-size:13px;font-weight:700}
+.auth-form input{padding:12px;border:1px solid var(--border);border-radius:9px;outline:none;width:100%}
+.auth-form input:focus{border-color:var(--primary)}
+.auth-error{min-height:18px;color:var(--red);font-size:13px;text-align:center}
+.user-chip{display:flex;align-items:center;gap:9px}
+.user-avatar{width:34px;height:34px;border-radius:50%;background:#dbeafe;color:#1e40af;display:flex;align-items:center;justify-content:center;font-weight:800}
+.logout{margin-left:8px}
+.account-qr{display:flex;flex-direction:column;align-items:center;gap:10px;padding:12px}
+.account-qr img{width:220px;height:220px;border:1px solid var(--border);border-radius:12px}
+.hidden{display:none!important}
+@media(max-width:520px){.auth-card{padding:22px}.top .user-chip span{display:none}}
+
+</style>
+</head>
+<body>
+
+<div class="auth-screen" id="authScreen">
+  <div class="auth-card">
+    <div class="auth-brand">Almuerzo <span>QR</span></div>
+    <p class="auth-sub">Sistema de control de almuerzos escolares</p>
+
+    <div class="auth-tabs">
+      <button id="loginTab" class="active">Iniciar sesión</button>
+      <button id="registerTab">Registrarse</button>
+    </div>
+
+    <form class="auth-form" id="loginForm">
+      <label>Documento
+        <input id="loginDocument" inputmode="numeric" autocomplete="username" required placeholder="Número de documento">
+      </label>
+      <label>Contraseña
+        <input id="loginPassword" type="password" autocomplete="current-password" required placeholder="Contraseña">
+      </label>
+      <div class="auth-error" id="loginError"></div>
+      <button class="btn primary">Iniciar sesión</button>
+    </form>
+
+    <form class="auth-form hidden" id="registerForm">
+      <label>Nombre completo
+        <input id="regName" autocomplete="name" required placeholder="Nombre y apellido">
+      </label>
+      <label>Documento
+        <input id="regDocument" inputmode="numeric" autocomplete="username" required placeholder="Número de documento">
+      </label>
+      <label>Curso
+        <input id="regCourse" required placeholder="Ej. 10-A">
+      </label>
+      <label>Contraseña
+        <input id="regPassword" type="password" autocomplete="new-password" minlength="4" required placeholder="Mínimo 4 caracteres">
+      </label>
+      <div class="auth-error" id="registerError"></div>
+      <button class="btn primary">Crear cuenta</button>
+    </form>
+  </div>
+</div>
+
+<div class="app">
+<aside class="sidebar" id="sidebar">
+  <div class="brand">Almuerzo <span>QR</span></div>
+  <nav class="nav">
+    <button class="active" data-page="dashboard">Dashboard</button>
+    <button data-page="scanner">Escanear QR</button>
+    <button data-page="myqr">Mi QR</button>
+    <button data-page="students">Estudiantes</button>
+    <button data-page="sanctions">Sancionados</button>
+    <button data-page="history">Historial</button>
+  </nav>
+</aside>
+<main class="main">
+  <div class="top">
+    <div style="display:flex;align-items:center;gap:12px"><button class="btn ghost mobile-btn" id="menu">☰</button><div><h1 id="pageTitle">Dashboard</h1><small>Sistema de control de almuerzos escolares</small></div></div>
+    <div class="user-chip" id="userChip"><div class="user-avatar" id="userAvatar">U</div><span id="userNameTop">Usuario</span><button class="btn ghost logout" id="logoutBtn">Cerrar sesión</button></div>
+  </div>
+
+  <section class="page active" id="dashboard">
+    <div class="cards">
+      <div class="card"><div class="stat-label">Estudiantes</div><div class="stat" id="stStudents">0</div></div>
+      <div class="card"><div class="stat-label">Almuerzos hoy</div><div class="stat green" id="stMeals">0</div></div>
+      <div class="card"><div class="stat-label">Sancionados</div><div class="stat red" id="stSanctions">0</div></div>
+      <div class="card"><div class="stat-label">Desperdicios</div><div class="stat orange" id="stWaste">0</div></div>
+    </div>
+    <div class="grid">
+      <div class="card"><h2 class="section-title">Consumo de los últimos 7 días</h2><div class="chart" id="chart"></div></div>
+      <div class="card"><h2 class="section-title">Actividad reciente</h2><div id="recent"></div></div>
+    </div>
+  </section>
+
+  <section class="page" id="scanner">
+    <div class="qr-layout">
+      <div class="card"><h2 class="section-title">Escáner QR</h2><div class="scanner"><video id="video" playsinline></video><div class="scanbox"></div></div><div style="margin-top:12px;display:flex;gap:8px"><button class="btn primary" id="startScan">Activar cámara</button><button class="btn ghost" id="stopScan">Detener</button></div><p style="color:var(--muted);font-size:13px">También puedes usar el botón de demostración para probar estudiantes ficticios sin cámara.</p><button class="btn ghost" id="demoScan">Simular escaneo</button></div>
+      <div class="card"><h2 class="section-title">Resultado</h2><div id="scanResult" class="empty">Escanea un QR para consultar el acceso al almuerzo.</div></div>
+    </div>
+  </section>
+
+
+  <section class="page" id="myqr">
+    <div class="card">
+      <h2 class="section-title">Mi código QR</h2>
+      <div id="myQrContent"></div>
+    </div>
+  </section>
+
+  <section class="page" id="students">
+    <div class="card"><div class="toolbar"><input id="studentSearch" placeholder="Buscar por nombre, curso o código..."></div><div class="table-wrap"><table class="table"><thead><tr><th>Estudiante</th><th>Curso</th><th>Estado</th><th>QR</th><th></th></tr></thead><tbody id="studentsTable"></tbody></table></div></div>
+  </section>
+
+  <section class="page" id="sanctions">
+    <div class="card"><h2 class="section-title">Estudiantes sancionados</h2><div class="table-wrap"><table class="table"><thead><tr><th>Estudiante</th><th>Curso</th><th>Motivo</th><th>Fin de sanción</th><th></th></tr></thead><tbody id="sanctionsTable"></tbody></table></div></div>
+  </section>
+
+  <section class="page" id="history">
+    <div class="card"><div class="toolbar"><select id="historyFilter"><option value="all">Todos los eventos</option><option value="meal">Almuerzos</option><option value="waste">Desperdicios</option><option value="sanction">Sanciones</option></select></div><div class="table-wrap"><table class="table"><thead><tr><th>Fecha</th><th>Estudiante</th><th>Evento</th><th>Detalle</th></tr></thead><tbody id="historyTable"></tbody></table></div></div>
+  </section>
+</main>
+</div>
+
+<div class="modal" id="studentModal"><div class="modal-box"><div class="modal-head"><h2>Nuevo estudiante</h2><button class="close" data-close>×</button></div><form class="form" id="studentForm"><label>Nombre<input required id="fName"></label><label>Curso<input required id="fCourse" placeholder="Ej. 10-A"></label><label>Código QR<input required id="fCode" placeholder="Ej. EST-001"></label><button class="btn primary">Crear estudiante</button></form></div></div>
+<div class="modal" id="profileModal"><div class="modal-box"><div class="modal-head"><h2>Perfil</h2><button class="close" data-close>×</button></div><div id="profileContent"></div></div></div>
+<div class="toast" id="toast"></div>
+<script>
+const qrURL = code => `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(code)}`;
+const today = new Date();
+const iso = d => new Date(d).toISOString().slice(0,10);
+let students = JSON.parse(localStorage.getItem("aq_students")) || [
+ {id:1,name:"Juan Pérez",course:"10-A",code:"EST-001",sanctionUntil:null},
+ {id:2,name:"María Gómez",course:"10-B",code:"EST-002",sanctionUntil:null},
+ {id:3,name:"Carlos Rodríguez",course:"9-A",code:"EST-003",sanctionUntil:iso(new Date(Date.now()+86400000))},
+ {id:4,name:"Laura Martínez",course:"11-A",code:"EST-004",sanctionUntil:null},
+ {id:5,name:"Andrés López",course:"8-B",code:"EST-005",sanctionUntil:null}
+];
+let history = JSON.parse(localStorage.getItem("aq_history")) || [
+ {date:new Date().toLocaleString(),sid:1,type:"meal",detail:"Almuerzo autorizado"},
+ {date:new Date().toLocaleString(),sid:2,type:"meal",detail:"Almuerzo autorizado"},
+ {date:new Date().toLocaleString(),sid:3,type:"waste",detail:"Desperdicio registrado; sanción de 1 día"},
+ {date:new Date().toLocaleString(),sid:3,type:"sanction",detail:"Sanción activa por desperdicio"}
+];
+
+let accounts = JSON.parse(localStorage.getItem("aq_accounts") || "[]");
+let currentUser = JSON.parse(sessionStorage.getItem("aq_currentUser") || "null");
+
+function saveAccounts(){localStorage.setItem("aq_accounts",JSON.stringify(accounts));}
+function makeQrCodeForAccount(account){
+  return qrURL("ALM-"+account.id);
+}
+function accountToStudent(account){
+  return {
+    id:account.id,
+    name:account.name,
+    course:account.course,
+    code:account.qrCode,
+    document:account.document,
+    sanctionUntil:account.sanctionUntil || null
+  };
+}
+function syncAccountToStudent(account){
+  const i=students.findIndex(s=>s.id===account.id);
+  const st=accountToStudent(account);
+  if(i>=0) students[i]=st; else students.push(st);
+}
+function showMyQr(){
+  if(!currentUser) return;
+  const qr=qrURL(currentUser.qrCode);
+  document.getElementById("myQrContent").innerHTML=
+    `<div class="account-qr">
+      <img src="${qr}" alt="QR de ${currentUser.name}">
+      <h3 style="margin:4px 0 0">${currentUser.name}</h3>
+      <p style="margin:0;color:var(--muted)">Documento: <strong>${currentUser.document}</strong><br>Curso: <strong>${currentUser.course}</strong></p>
+      <p style="margin:5px 0;color:var(--muted);font-size:13px">Código único: <strong>${currentUser.qrCode}</strong></p>
+      <button class="btn primary" onclick="printMyQr()">Imprimir QR</button>
+    </div>`;
+}
+function printMyQr(){
+  if(!currentUser) return;
+  const w=window.open("","_blank","width=500,height=650");
+  if(!w){toast("Permite las ventanas emergentes para imprimir");return;}
+  w.document.write(`<html><head><title>QR - ${currentUser.name}</title><style>body{font-family:Arial;text-align:center;padding:30px}img{width:300px;height:300px}h2{margin-bottom:5px}</style></head><body><h2>${currentUser.name}</h2><p>Documento: ${currentUser.document}<br>Curso: ${currentUser.course}</p><img src="${qrURL(currentUser.qrCode)}"><p>${currentUser.qrCode}</p><script>window.onload=()=>window.print()<\/script></body></html>`);
+  w.document.close();
+}
+function updateTopUser(){
+  if(!currentUser)return;
+  document.getElementById("userNameTop").textContent=currentUser.name;
+  document.getElementById("userAvatar").textContent=(currentUser.name||"U").trim().charAt(0).toUpperCase();
+}
+function enterApp(){
+  document.getElementById("authScreen").classList.add("hidden");
+  updateTopUser();
+  showMyQr();
+  render();
+}
+function logout(){
+  sessionStorage.removeItem("aq_currentUser");
+  currentUser=null;
+  document.getElementById("authScreen").classList.remove("hidden");
+  document.getElementById("loginForm").classList.remove("hidden");
+  document.getElementById("registerForm").classList.add("hidden");
+  document.getElementById("loginTab").classList.add("active");
+  document.getElementById("registerTab").classList.remove("active");
+}
+
+let mealsToday = JSON.parse(localStorage.getItem("aq_meals")) || 2;
+const save=()=>{localStorage.setItem("aq_students",JSON.stringify(students));localStorage.setItem("aq_history",JSON.stringify(history));localStorage.setItem("aq_meals",mealsToday)};
+const sid=id=>students.find(s=>s.id===id);
+const toast=m=>{const t=document.getElementById("toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2200)};
+function render(){
+ document.getElementById("stStudents").textContent=students.length;
+ document.getElementById("stMeals").textContent=mealsToday;
+ document.getElementById("stSanctions").textContent=students.filter(s=>s.sanctionUntil&&s.sanctionUntil>=iso(today)).length;
+ document.getElementById("stWaste").textContent=history.filter(h=>h.type==="waste").length;
+ renderStudents();renderSanctions();renderHistory();renderRecent();renderChart();
+}
+function renderStudents(){
+ const q=(document.getElementById("studentSearch")?.value||"").toLowerCase();
+ document.getElementById("studentsTable").innerHTML=students.filter(s=>(s.name+" "+s.course+" "+s.code).toLowerCase().includes(q)).map(s=>{
+ const banned=s.sanctionUntil&&s.sanctionUntil>=iso(today);
+ return `<tr><td><strong>${s.name}</strong></td><td>${s.course}</td><td><span class="badge ${banned?"bad":"ok"}">${banned?"Sancionado":"Habilitado"}</span></td><td>${s.code}</td><td><button class="btn ghost" onclick="profile(${s.id})">Ver</button></td></tr>`}).join("")||`<tr><td colspan="5" class="empty">No hay estudiantes.</td></tr>`;
+}
+function renderSanctions(){
+ const arr=students.filter(s=>s.sanctionUntil&&s.sanctionUntil>=iso(today));
+ document.getElementById("sanctionsTable").innerHTML=arr.map(s=>`<tr><td>${s.name}</td><td>${s.course}</td><td>Desperdicio de almuerzo</td><td>${s.sanctionUntil}</td><td><button class="btn ghost" onclick="liftSanction(${s.id})">Levantar</button></td></tr>`).join("")||`<tr><td colspan="5" class="empty">No hay sanciones activas.</td></tr>`;
+}
+function renderHistory(){
+ const f=document.getElementById("historyFilter")?.value||"all";
+ document.getElementById("historyTable").innerHTML=history.filter(h=>f==="all"||h.type===f).map(h=>{let s=sid(h.sid);return `<tr><td>${h.date}</td><td>${s?s.name:"Desconocido"}</td><td><span class="badge ${h.type==="meal"?"ok":h.type==="waste"?"warn":"bad"}">${h.type==="meal"?"Almuerzo":h.type==="waste"?"Desperdicio":"Sanción"}</span></td><td>${h.detail}</td></tr>`}).join("")||`<tr><td colspan="4" class="empty">Sin registros.</td></tr>`;
+}
+function renderRecent(){document.getElementById("recent").innerHTML=history.slice(0,6).map(h=>{let s=sid(h.sid);return `<div style="padding:10px 0;border-bottom:1px solid var(--border)"><strong>${s?.name||"—"}</strong><br><small style="color:var(--muted)">${h.detail}</small></div>`}).join("")}
+function renderChart(){const vals=[14,18,12,20,16,23,mealsToday];document.getElementById("chart").innerHTML=vals.map((v,i)=>`<div class="bar" style="height:${Math.max(25,v*7)}px"><span>${v}</span><small>${["Lun","Mar","Mié","Jue","Vie","Sáb","Hoy"][i]}</small></div>`).join("")}
+function scanStudent(s){
+  const banned=s.sanctionUntil&&s.sanctionUntil>=iso(today);
+  document.getElementById("scanResult").innerHTML=`<div class="student-card"><div class="qrbox"><img src="${qrURL(s.code)}"></div><div><h3>${banned?"Almuerzo denegado":"Almuerzo autorizado"}</h3><p><strong>${s.name}</strong><br>${s.course}<br>Documento: ${s.document||"—"}<br><span class="badge ${banned?"bad":"ok"}">${banned?"Sancionado hasta "+s.sanctionUntil:"Puede recibir el almuerzo"}</span></p>${!banned?`<button class="btn primary" onclick="authorize(${s.id})">Registrar almuerzo</button>`:"" }<button class="btn ghost" style="margin-left:6px" onclick="waste(${s.id})">Registrar desperdicio</button></div></div>`;
+}
+function authorize(id){let s=sid(id);mealsToday++;history.unshift({date:new Date().toLocaleString(),sid:id,type:"meal",detail:"Almuerzo autorizado"});save();render();toast("Almuerzo registrado");scanStudent(s)}
+function waste(id){let s=sid(id);s.sanctionUntil=iso(new Date(Date.now()+86400000));history.unshift({date:new Date().toLocaleString(),sid:id,type:"waste",detail:"Desperdicio registrado; sanción automática de 1 día"});history.unshift({date:new Date().toLocaleString(),sid:id,type:"sanction",detail:"Sanción activa por desperdicio"});save();render();toast("Desperdicio registrado: sanción de 1 día");scanStudent(s)}
+function liftSanction(id){sid(id).sanctionUntil=null;save();render();toast("Sanción levantada")}
+function profile(id){let s=sid(id),b=s.sanctionUntil&&s.sanctionUntil>=iso(today);document.getElementById("profileContent").innerHTML=`<div class="profile" style="margin-top:15px"><div><div class="qrbox"><img src="${qrURL(s.code)}"></div><p style="text-align:center;color:var(--muted)">${s.code}</p></div><div class="detail"><h3>${s.name}</h3><p>Curso: <strong>${s.course}</strong></p><p>Código: <strong>${s.code}</strong></p><p>Estado: <span class="badge ${b?"bad":"ok"}">${b?"Sancionado":"Habilitado"}</span></p>${b?`<p>Sanción hasta: <strong>${s.sanctionUntil}</strong></p>`:""}<button class="btn danger" onclick="waste(${s.id});closeModal('profileModal')">Registrar desperdicio</button></div></div>`;document.getElementById("profileModal").classList.add("show")}
+function closeModal(id){document.getElementById(id).classList.remove("show")}
+function openStudent(){document.getElementById("studentModal").classList.add("show")}
+document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.getElementById(b.dataset.page).classList.add("active");document.getElementById("pageTitle").textContent=b.textContent;document.getElementById("sidebar").classList.remove("open")});
+document.getElementById("menu").onclick=()=>document.getElementById("sidebar").classList.toggle("open");
+document.getElementById("addStudent2")?.addEventListener("click",openStudent);
+document.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>b.closest(".modal").classList.remove("show"));
+document.getElementById("studentSearch").oninput=renderStudents;document.getElementById("historyFilter").onchange=renderHistory;
+document.getElementById("studentForm").onsubmit=e=>{e.preventDefault();let code=fCode.value.trim();if(students.some(s=>s.code===code))return toast("Ese código QR ya existe");students.push({id:Date.now(),name:fName.value.trim(),course:fCourse.value.trim(),code,sanctionUntil:null});save();render();closeModal("studentModal");e.target.reset();toast("Estudiante creado")};
+document.getElementById("demoScan").onclick=()=>scanStudent(students[Math.floor(Math.random()*students.length)]);
+let stream=null;
+let scanTimer=null;
+const scanCanvas=document.createElement("canvas");
+const scanCtx=scanCanvas.getContext("2d",{willReadFrequently:true});
+
+function stopCamera(){
+  if(scanTimer){cancelAnimationFrame(scanTimer);scanTimer=null;}
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
+  document.getElementById("video").srcObject=null;
+}
+
+function scanFrame(){
+  const video=document.getElementById("video");
+  if(!stream || video.readyState < 2){
+    scanTimer=requestAnimationFrame(scanFrame);
+    return;
+  }
+
+  if(video.videoWidth && video.videoHeight){
+    scanCanvas.width=video.videoWidth;
+    scanCanvas.height=video.videoHeight;
+    scanCtx.drawImage(video,0,0,scanCanvas.width,scanCanvas.height);
+    const image=scanCtx.getImageData(0,0,scanCanvas.width,scanCanvas.height);
+    const code=jsQR(image.data,image.width,image.height,{inversionAttempts:"attemptBoth"});
+
+    if(code && code.data){
+      const value=code.data.trim();
+      const student=students.find(s=>s.code===value);
+
+      if(student){
+        scanStudent(student);
+        toast("QR detectado: "+student.name);
+      }else{
+        document.getElementById("scanResult").innerHTML=
+          `<div><h3>QR no registrado</h3><p>El código <strong>${value}</strong> no pertenece a ningún estudiante.</p></div>`;
+        toast("QR detectado, pero no está registrado");
+      }
+
+      // Pause after a successful read so the same QR is not registered repeatedly.
+      stopCamera();
+      return;
+    }
+  }
+
+  scanTimer=requestAnimationFrame(scanFrame);
+}
+
+document.getElementById("startScan").onclick=async()=>{
+  try{
+    stopCamera();
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      throw new Error("getUserMedia no disponible");
+    }
+
+    stream=await navigator.mediaDevices.getUserMedia({
+      video:{
+        facingMode:{ideal:"environment"},
+        width:{ideal:1280},
+        height:{ideal:720}
+      },
+      audio:false
+    });
+
+    const video=document.getElementById("video");
+    video.srcObject=stream;
+    await video.play();
+    toast("Cámara activada. Apunta al QR.");
+    scanTimer=requestAnimationFrame(scanFrame);
+  }catch(e){
+    console.error(e);
+    toast("No se pudo acceder a la cámara. Usa HTTPS y permite el permiso.");
+  }
+};
+
+document.getElementById("stopScan").onclick=()=>{
+  stopCamera();
+  toast("Cámara detenida");
+};
+
+
+document.getElementById("loginTab").onclick=()=>{
+  document.getElementById("loginTab").classList.add("active");
+  document.getElementById("registerTab").classList.remove("active");
+  document.getElementById("loginForm").classList.remove("hidden");
+  document.getElementById("registerForm").classList.add("hidden");
+  document.getElementById("loginError").textContent="";
+};
+document.getElementById("registerTab").onclick=()=>{
+  document.getElementById("registerTab").classList.add("active");
+  document.getElementById("loginTab").classList.remove("active");
+  document.getElementById("registerForm").classList.remove("hidden");
+  document.getElementById("loginForm").classList.add("hidden");
+  document.getElementById("registerError").textContent="";
+};
+
+document.getElementById("registerForm").onsubmit=e=>{
+  e.preventDefault();
+  const name=document.getElementById("regName").value.trim();
+  const documentId=document.getElementById("regDocument").value.trim();
+  const course=document.getElementById("regCourse").value.trim();
+  const password=document.getElementById("regPassword").value;
+  const err=document.getElementById("registerError");
+
+  if(accounts.some(a=>a.document===documentId)){
+    err.textContent="Ya existe una cuenta con ese documento.";
+    return;
+  }
+
+  const id=crypto.randomUUID ? crypto.randomUUID() : "U-"+Date.now()+"-"+Math.random().toString(36).slice(2);
+  const account={id,name,document:documentId,course,password,qrCode:"ALM-"+id,sanctionUntil:null};
+  accounts.push(account);
+  saveAccounts();
+
+  // Make the account immediately scannable by the admin scanner.
+  syncAccountToStudent(account);
+  save();
+
+  currentUser={...account};
+  sessionStorage.setItem("aq_currentUser",JSON.stringify(currentUser));
+  e.target.reset();
+  enterApp();
+  toast("Cuenta creada. Tu QR es único.");
+};
+
+document.getElementById("loginForm").onsubmit=e=>{
+  e.preventDefault();
+  const documentId=document.getElementById("loginDocument").value.trim();
+  const password=document.getElementById("loginPassword").value;
+  const account=accounts.find(a=>a.document===documentId && a.password===password);
+  const err=document.getElementById("loginError");
+  if(!account){
+    err.textContent="Documento o contraseña incorrectos.";
+    return;
+  }
+  currentUser={...account};
+  sessionStorage.setItem("aq_currentUser",JSON.stringify(currentUser));
+  err.textContent="";
+  enterApp();
+};
+
+document.getElementById("logoutBtn").onclick=logout;
+
+// Existing/demo students are still visible in the admin list.
+// Registered accounts are synchronized whenever the page loads.
+accounts.forEach(syncAccountToStudent);
+if(currentUser){
+  const fresh=accounts.find(a=>a.id===currentUser.id);
+  if(fresh){currentUser={...fresh};sessionStorage.setItem("aq_currentUser",JSON.stringify(currentUser));enterApp();}
+}else{
+  document.getElementById("authScreen").classList.remove("hidden");
+}
+
+render();
+</script>
+</body>
+</html>
