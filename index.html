@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Almuerzo QR</title>
+<script src="https://unpkg.com/jsqr@1.4.0/dist/jsQR.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f3f4f6;color:#111827}
+header{background:#111827;color:white;padding:16px 20px;display:flex;justify-content:space-between;align-items:center}
+header h1{margin:0;font-size:21px}.user{font-size:14px}
+.container{max-width:1050px;margin:auto;padding:20px}.card{background:white;border-radius:14px;padding:20px;margin-bottom:18px;box-shadow:0 2px 10px #00000012}
+h2{margin-top:0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+input,select,button{width:100%;padding:12px;border-radius:9px;border:1px solid #d1d5db;font-size:15px}
+button{background:#111827;color:white;border:0;cursor:pointer;font-weight:bold}button.secondary{background:#e5e7eb;color:#111827}
+label{display:block;font-weight:bold;margin:10px 0 6px}.hidden{display:none}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}nav button{width:auto}
+video{width:100%;max-width:560px;background:#000;border-radius:12px;display:block;margin:auto}
+#canvas{display:none}.status{padding:12px;border-radius:9px;background:#f3f4f6;margin-top:12px}
+.success{background:#dcfce7;color:#166534}.error{background:#fee2e2;color:#991b1b}
+.qr{text-align:center}.qr img{width:280px;height:280px;image-rendering:auto}
+table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid #e5e7eb;text-align:left}
+.small{font-size:13px;color:#6b7280}.big{font-size:24px;font-weight:bold}
+</style>
+</head>
+<body>
+
+<div id="auth" class="container">
+  <div class="card">
+    <h1>🍽️ Almuerzo QR</h1>
+    <p>Inicia sesión o crea tu cuenta.</p>
+
+    <div id="loginBox">
+      <h2>Iniciar sesión</h2>
+      <label>Documento</label><input id="loginDoc" inputmode="numeric">
+      <label>Contraseña</label><input id="loginPass" type="password">
+      <button onclick="login()">Iniciar sesión</button>
+      <p class="small">¿No tienes cuenta? <a href="#" onclick="showRegister();return false">Registrarte</a></p>
+      <div id="loginMsg"></div>
+    </div>
+
+    <div id="registerBox" class="hidden">
+      <h2>Crear cuenta</h2>
+      <label>Nombre completo</label><input id="regName">
+      <label>Documento</label><input id="regDoc" inputmode="numeric">
+      <label>Curso</label><input id="regCourse" placeholder="Ej: 10-02">
+      <label>Contraseña</label><input id="regPass" type="password">
+      <button onclick="register()">Crear cuenta</button>
+      <p class="small">¿Ya tienes cuenta? <a href="#" onclick="showLogin();return false">Iniciar sesión</a></p>
+      <div id="regMsg"></div>
+    </div>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+<header><h1>🍽️ Almuerzo QR</h1><div class="user" id="userLabel"></div></header>
+<div class="container">
+<nav>
+<button onclick="page('scan')">📷 Escanear QR</button>
+<button onclick="page('myqr')">🔳 Mi QR</button>
+<button onclick="page('students')">👥 Estudiantes</button>
+<button onclick="logout()" class="secondary">Cerrar sesión</button>
+</nav>
+
+<section id="scan" class="card">
+<h2>Escanear QR</h2>
+<p class="small">El QR debe contener exactamente el número de documento del estudiante.</p>
+<button id="startBtn" onclick="startScanner()">📷 Activar cámara</button>
+<video id="video" playsinline></video>
+<canvas id="canvas"></canvas>
+<div id="scanStatus" class="status">Cámara apagada.</div>
+
+<div id="manualBox" style="margin-top:18px">
+<label>Prueba manual</label>
+<input id="manualDoc" placeholder="Escribe el documento que debería contener el QR">
+<button onclick="findStudent(document.getElementById('manualDoc').value)" style="margin-top:8px">Buscar estudiante</button>
+</div>
+
+<div id="studentResult" class="card hidden" style="margin-top:18px"></div>
+</section>
+
+<section id="myqr" class="card hidden qr">
+<h2>Mi QR</h2>
+<p id="myInfo"></p>
+<img id="myQrImg" alt="Código QR">
+<p><strong>Contenido del QR:</strong></p>
+<div class="big" id="myQrValue"></div>
+<p class="small">Este QR contiene únicamente tu número de documento.</p>
+<button onclick="window.print()">🖨️ Imprimir QR</button>
+</section>
+
+<section id="students" class="card hidden">
+<h2>Estudiantes registrados</h2>
+<div id="studentList"></div>
+</section>
+</div>
+</div>
+
+<script>
+const KEY="almuerzo_qr_accounts_v4";
+let accounts=JSON.parse(localStorage.getItem(KEY)||"[]");
+let current=null;
+let stream=null;
+let scanning=false;
+
+function save(){localStorage.setItem(KEY,JSON.stringify(accounts));}
+
+function showRegister(){loginBox.classList.add("hidden");registerBox.classList.remove("hidden");}
+function showLogin(){registerBox.classList.add("hidden");loginBox.classList.remove("hidden");}
+
+function cleanDoc(v){return String(v||"").trim().replace(/\s+/g,"");}
+
+function register(){
+  const name=regName.value.trim(), doc=cleanDoc(regDoc.value), course=regCourse.value.trim(), pass=regPass.value;
+  if(!name||!doc||!course||!pass){regMsg.innerHTML='<div class="status error">Completa todos los campos.</div>';return}
+  if(accounts.some(a=>a.doc===doc)){regMsg.innerHTML='<div class="status error">Ese documento ya está registrado.</div>';return}
+  const a={name,doc,course,pass};
+  accounts.push(a);save();current=a;
+  openApp();
+}
+
+function login(){
+  const doc=cleanDoc(loginDoc.value), pass=loginPass.value;
+  const a=accounts.find(x=>x.doc===doc&&x.pass===pass);
+  if(!a){loginMsg.innerHTML='<div class="status error">Documento o contraseña incorrectos.</div>';return}
+  current=a;openApp();
+}
+
+function openApp(){
+  auth.classList.add("hidden");app.classList.remove("hidden");
+  userLabel.textContent=current.name+" · "+current.course;
+  renderMyQR();renderStudents();page("scan");
+}
+
+function logout(){
+  stopScanner();current=null;app.classList.add("hidden");auth.classList.remove("hidden");showLogin();
+}
+
+function page(id){
+  ["scan","myqr","students"].forEach(x=>document.getElementById(x).classList.toggle("hidden",x!==id));
+  if(id!=="scan")stopScanner();
+  if(id==="myqr")renderMyQR();
+  if(id==="students")renderStudents();
+}
+
+function renderMyQR(){
+  const value=current.doc;
+  myInfo.textContent=current.name+" · "+current.course;
+  myQrValue.textContent=value;
+  // The QR payload is EXACTLY the document, no URL, JSON or UUID.
+  myQrImg.src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data="+encodeURIComponent(value);
+}
+
+function renderStudents(){
+  if(!accounts.length){studentList.innerHTML='<p class="small">No hay estudiantes registrados.</p>';return}
+  studentList.innerHTML="<table><tr><th>Nombre</th><th>Documento</th><th>Curso</th></tr>"+
+    accounts.map(a=>`<tr><td>${escapeHtml(a.name)}</td><td>${escapeHtml(a.doc)}</td><td>${escapeHtml(a.course)}</td></tr>`).join("")+"</table>";
+}
+
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));}
+
+async function startScanner(){
+  if(!window.isSecureContext){scanStatus.className="status error";scanStatus.textContent="El navegador exige HTTPS para usar la cámara. Sube esta página a GitHub Pages.";return}
+  if(!navigator.mediaDevices?.getUserMedia){scanStatus.className="status error";scanStatus.textContent="Este navegador no permite acceder a la cámara.";return}
+  try{
+    stopScanner();
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false});
+    video.srcObject=stream;await video.play();
+    scanning=true;
+    scanStatus.className="status success";
+    scanStatus.textContent="Cámara activa. Apunta al QR.";
+    requestAnimationFrame(scanLoop);
+  }catch(e){
+    scanStatus.className="status error";
+    scanStatus.textContent="No se pudo abrir la cámara. Revisa el permiso del navegador.";
+  }
+}
+
+function stopScanner(){
+  scanning=false;
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
+  if(video)video.srcObject=null;
+}
+
+function scanLoop(){
+  if(!scanning)return;
+  if(video.readyState>=2 && video.videoWidth){
+    canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+    const ctx=canvas.getContext("2d",{willReadFrequently:true});
+    ctx.drawImage(video,0,0,canvas.width,canvas.height);
+    const image=ctx.getImageData(0,0,canvas.width,canvas.height);
+    const code=jsQR(image.data,image.width,image.height,{inversionAttempts:"attemptBoth"});
+    if(code?.data){
+      scanning=false;
+      findStudent(code.data);
+      return;
+    }
+  }
+  requestAnimationFrame(scanLoop);
+}
+
+function findStudent(raw){
+  const value=cleanDoc(raw);
+  const student=accounts.find(a=>a.doc===value);
+  if(student){
+    studentResult.className="card";
+    studentResult.innerHTML=`
+      <h2>✅ Estudiante encontrado</h2>
+      <p><strong>Nombre:</strong> ${escapeHtml(student.name)}</p>
+      <p><strong>Documento:</strong> ${escapeHtml(student.doc)}</p>
+      <p><strong>Curso:</strong> ${escapeHtml(student.course)}</p>
+      <div class="status success">Almuerzo autorizado</div>`;
+    scanStatus.className="status success";
+    scanStatus.textContent="QR detectado correctamente.";
+  }else{
+    studentResult.className="card";
+    studentResult.innerHTML=`<h2>❌ No registrado</h2><p>La cámara leyó:</p><div class="big">${escapeHtml(value)}</div><p class="small">Ese documento no existe en las cuentas de este navegador.</p>`;
+    scanStatus.className="status error";
+    scanStatus.textContent="QR detectado, pero el documento no está registrado.";
+  }
+}
+</script>
+</body>
+</html>
